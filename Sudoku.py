@@ -9,9 +9,10 @@ if __name__ == "__main__":
     import tkinter as tk
 
     all_given = []
+    solution = []
     def Solve(): # This is the gui button, runs entire solving code
         entry_list = ''
-        temp_unsolved = np.zeros([9, 9])
+        temp_unsolved = np.zeros([9, 9], dtype=int)
 
         # retrieves values from the input boxes in a list
         for entries in all_given:
@@ -19,10 +20,10 @@ if __name__ == "__main__":
         # converts list into the temp_unsolved array
         for row in range(9):
             for column in range(9):
-                temp_unsolved[row, column] = entry_list[row * 9 + column]
+                temp_unsolved[row, column] = int(entry_list[row * 9 + column])
 
-    # uncomment this to test code faster
-        temp_unsolved = np.array([[9, 0, 0, 0, 6, 0, 0, 0, 3],
+    # temporary no input test to solve
+        utemp_unsolved = np.array([[9, 0, 0, 0, 6, 0, 0, 0, 3],
                                   [0, 8, 0, 4, 0, 7, 0, 9, 0],
                                   [0, 0, 2, 0, 5, 0, 6, 0, 0],
                                   [0, 4, 0, 0, 0, 0, 0, 1, 0],
@@ -32,7 +33,7 @@ if __name__ == "__main__":
                                   [0, 7, 0, 8, 0, 5, 0, 2, 0],
                                   [3, 0, 0, 0, 4, 0, 0, 0, 9]])
 
-            # checks for input errors
+        # checks for input errors, currently not working
         for r in range(0, 9):
             for c in range(0, 9):
                 if temp_unsolved[r, c] == 0:
@@ -41,13 +42,13 @@ if __name__ == "__main__":
                         or temp_unsolved[:, c].tolist().count(temp_unsolved[r, c]) > 1:
                     # still needs box
                     print('input error: illegal box at row', r, 'column', c)
-        # create a temporary solving array size 9x9, with each value as its own size 9 array filled with 1 through 9
+        # check for duplicates, im not sure what the above thing does
+        # still needs written
 
+        # create a temporary solving array size 9x9, with each value as its own size 9 array filled with 1 through 9
         # initializes potential solution array
         pseudo_ind = np.arange(1, 10)
         pseudo_full = np.array([pseudo_ind] * 81)
-
-        # while no_change = False: this should run until it goes through the entire puzzle without solving a square
 
         # finds every potential value and stores in pseudo_full. Checks pseudo_full for single solution boxes
         for r in range(0, 9):
@@ -352,6 +353,10 @@ if __name__ == "__main__":
         # add while loops before brute force to apply new several times before trying brute force
 
         print(temp_unsolved)
+        # stores answer in solution as a list
+        for row in range(9):
+            for column in range(9):
+                solution.insert(row * 9 + column,temp_unsolved[row, column])
 
         # create a loop for the second step hidden pairs
         # check for hidden pairs and delete values
@@ -378,19 +383,25 @@ if __name__ == "__main__":
 
         # still not solved, use brute force
 
-    # GUI intializing
+    # GUI initializing
     root = tk.Tk()
     root.title("Sudoku Solver")
-    root.geometry("1100x500")
-    tk.Label(root, text="Sudoku Solver").grid(row=10, column=4)
-    tk.Label(root, text="Enter known values").grid(row=11, column=4)
-
+    root.geometry("350x250")
+    root.configure(bg="#964b00")
+    tk.Label(root, text="Sudoku Solver", font="arial", fg="white", bg="#964b00").grid(row=1, column=4)
+    tk.Label(root, text="Enter known values", fg="white", bg="#964b00").grid(row=2, column=4)
+    # populates entry boxes
     for row in range(9):
         for column in range(9):
-            given = tk.Entry(root)
+            given = tk.Entry(root, justify="center", width=3)
             given.insert(-1, 0)
-            given.grid(row=row, column=column)
+            given.grid(row=row+3, column=column+8)
             all_given.append(given)
 
-    tk.Button(root, text='Solve', command=Solve).grid(row=10, column=0)
+    tk.Button(root, text='Solve', command=Solve).grid(row=12, column=0)
+    # fills entry boxes with solution
+    for row in range(9):
+        for column in range(9):
+            given.insert(row * 9 + column, solution)
+
     root.mainloop()
