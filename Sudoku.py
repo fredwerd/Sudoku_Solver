@@ -83,7 +83,7 @@ if __name__ == "__main__":
                     pseudo_full[r * 9 + c, temp_unsolved[r, c] - 1] = temp_unsolved[r, c]
 
 
-            # test that original is restored
+            # test that original is restored, needs checked again after error checking is fixed
             for r in range(0, 9):
                 for c in range(0, 9):
                     if temp_unsolved[r, c] > 0:
@@ -356,7 +356,15 @@ if __name__ == "__main__":
         # stores answer in solution as a list
         for row in range(9):
             for column in range(9):
-                solution.insert(row * 9 + column,temp_unsolved[row, column])
+                solution.insert(row * 9 + column, temp_unsolved[row, column])
+
+        # fills entry boxes with solution
+        # actually recreates the entry boxes in the same position with the solution values
+        for row in range(9):
+            for column in range(9):
+                given = tk.Entry(root, justify="center", width=3)
+                given.insert(-1, temp_unsolved[row, column])
+                given.grid(row=row + 3, column=column + 8)
 
         # create a loop for the second step hidden pairs
         # check for hidden pairs and delete values
@@ -386,7 +394,7 @@ if __name__ == "__main__":
     # GUI initializing
     root = tk.Tk()
     root.title("Sudoku Solver")
-    root.geometry("350x250")
+    root.geometry("420x270")
     root.configure(bg="#964b00")
     tk.Label(root, text="Sudoku Solver", font="arial", fg="white", bg="#964b00").grid(row=1, column=4)
     tk.Label(root, text="Enter known values", fg="white", bg="#964b00").grid(row=2, column=4)
@@ -394,14 +402,11 @@ if __name__ == "__main__":
     for row in range(9):
         for column in range(9):
             given = tk.Entry(root, justify="center", width=3)
-            given.insert(-1, 0)
-            given.grid(row=row+3, column=column+8)
-            all_given.append(given)
+            given.insert(-1, 0)  # fills box with a zero at -1 index? It works, but so does changing the number
+            given.grid(row=row+3, column=column+8)  # spacial position of box
+            all_given.append(given) # adds the entry box input to the end of the array "all_given"
 
     tk.Button(root, text='Solve', command=Solve).grid(row=12, column=0)
-    # fills entry boxes with solution
-    for row in range(9):
-        for column in range(9):
-            given.insert(row * 9 + column, solution)
+
 
     root.mainloop()
