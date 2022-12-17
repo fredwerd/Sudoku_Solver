@@ -1,28 +1,41 @@
 if __name__ == "__main__":
 
-
     # check speeds of differing orders. Maybe set a check to determine puzzle difficulty by how many given values there are
     # and change the order depending. Should always finish with brute force
 
     import numpy as np
     import copy
     import tkinter as tk
+    import time
 
+    # initializes empty lists to store GUI inputs and print solution to GUI outside solve function
     all_given = []
     solution = []
-    def Solve(): # This is the gui button, runs entire solving code
-        entry_list = ''
-        temp_unsolved = np.zeros([9, 9], dtype=int)
 
-        # retrieves values from the input boxes in a list
+
+
+    def Solve():
+        start_time = time.process_time()
+        temp_unsolved = np.zeros([9, 9], dtype=int)
+        entry_list = ''
+        # retrieves values from the input boxes in a list while checking for input errors
         for entries in all_given:
             entry_list = entry_list + entries.get()
-        # converts list into the temp_unsolved array
+            try:
+                int(entry_list[-1])
+            except:
+                print(entry_list[-1], "is not a valid input")
+                return
+            if int(entries.get()) > 9:
+                print(entries.get(), "is not a valid input")
+                return
+
+        # converts input list: all_given into the temp_unsolved array
         for row in range(9):
             for column in range(9):
                 temp_unsolved[row, column] = int(entry_list[row * 9 + column])
 
-    # temporary no input test to solve
+    # rename utemp_unsolved to temp_unsolved to override input values during testing
         utemp_unsolved = np.array([[9, 0, 0, 0, 6, 0, 0, 0, 3],
                                   [0, 8, 0, 4, 0, 7, 0, 9, 0],
                                   [0, 0, 2, 0, 5, 0, 6, 0, 0],
@@ -33,54 +46,56 @@ if __name__ == "__main__":
                                   [0, 7, 0, 8, 0, 5, 0, 2, 0],
                                   [3, 0, 0, 0, 4, 0, 0, 0, 9]])
 
-        # checks for input errors, currently not working
-        for r in range(0, 9):
-            for c in range(0, 9):
-                if temp_unsolved[r, c] == 0:
+        # checks for input errors
+        for row_error in range(0, 9):
+            for column_error in range(0, 9):
+                if temp_unsolved[row_error, column_error] == 0:
                     continue
-                if temp_unsolved[r].tolist().count(temp_unsolved[r, c]) > 1 \
-                        or temp_unsolved[:, c].tolist().count(temp_unsolved[r, c]) > 1:
+                    # this long thing is counting how many there are of the current index of temp_unsolved in each
+                    # row, and column
+                elif temp_unsolved[row_error].tolist().count(temp_unsolved[row_error, column_error]) > 1 \
+                        or temp_unsolved[:, column_error].tolist().count(
+                    temp_unsolved[row_error, column_error]) > 1:
                     # still needs box
-                    print('input error: illegal box at row', r, 'column', c)
-        # check for duplicates, im not sure what the above thing does
-        # still needs written
+                    print("input error: conflict(s) with box at row", row_error, "column", column_error)
+                    return
 
-        # create a temporary solving array size 9x9, with each value as its own size 9 array filled with 1 through 9
-        # initializes potential solution array
+        # creates pseudo_full as an 81x9 array correlating possible solutions to solution boxes
+        # sudoku box location is found by the equation: pseudo_full row = sudoku row * 9 + sudoku column /
+        # with rows and columns for either array beginning at 0 compatible with loop indexes
         pseudo_ind = np.arange(1, 10)
         pseudo_full = np.array([pseudo_ind] * 81)
 
-        # finds every potential value and stores in pseudo_full. Checks pseudo_full for single solution boxes
-        for r in range(0, 9):
-            for c in range(0, 9):
-                if temp_unsolved[r, c] > 0:
-                    # set value to 0 if spot can't be the number
-                    # column: start at the column in unsolved (c) and run down equivalent row in pseudo (x*9+c)
-                    for c1 in range(0, 9):
-                        pseudo_full[c1 * 9 + c, temp_unsolved[r, c] - 1] = 0
-                    # row: start at first column of current row (r) and run through the row
-                    for r1 in range(0, 9):
-                        pseudo_full[r * 9 + r1, temp_unsolved[r, c] - 1] = 0
-                    # box: check if row and column is the first second or third in smaller box
+        # user input is used to clear potential box solutions from pseudo_full
+        for row in range(0, 9):
+            for column in range(0, 9):
+                if temp_unsolved[row, column] > 0:
+                    # column: start at the current column in unsolved (c) and run down equivalent row in pseudo (c1*9+c)
+                    for column_clear in range(0, 9):
+                        pseudo_full[column_clear * 9 + column, temp_unsolved[row, column] - 1] = 0
+                    # row: start at first column of current row (r) and run through the row in pseudo
+                    for row_clear in range(0, 9):
+                        pseudo_full[row * 9 + row_clear, temp_unsolved[row, column] - 1] = 0
+                    # box: check if row and column is the first second or third in smaller 3x3 box
                     # reset loop index to the first slot in the smaller box
-                    if c % 3 == 0:
-                        c3 = c
-                    elif (c - 1) % 3 == 0:
-                        c3 = c - 1
+                    if column % 3 == 0:
+                        first_column = column
+                    elif (column - 1) % 3 == 0:
+                        first_column = column - 1
                     else:
-                        c3 = c - 2
-                    if r % 3 == 0:
-                        r3 = r
-                    elif (r - 1) % 3 == 0:
-                        r3 = r - 1
+                        first_column = column - 2
+                    if row % 3 == 0:
+                        first_row = row
+                    elif (row - 1) % 3 == 0:
+                        first_row = row - 1
                     else:
-                        r3 = r - 2
-                    for r4 in range(r3, r3 + 3):
-                        for c4 in range(c3, c3 + 3):
-                            # remove every current number pseudo of smaller box only
-                            pseudo_full[r4 * 9 + c4, temp_unsolved[r, c] - 1] = 0
+                        first_row = row - 2
+                    for box_row in range(first_row, first_row + 3):
+                        for box_column in range(first_column, first_column + 3):
+                            # clear the small box pseudo values
+                            pseudo_full[box_row * 9 + box_column, temp_unsolved[row, column] - 1] = 0
                     # current value from given values was erased, so set it back in the pseudo values
-                    pseudo_full[r * 9 + c, temp_unsolved[r, c] - 1] = temp_unsolved[r, c]
+                    pseudo_full[row * 9 + column, temp_unsolved[row, column] - 1] = temp_unsolved[row, column]
 
 
             # test that original is restored, needs checked again after error checking is fixed
@@ -365,6 +380,17 @@ if __name__ == "__main__":
                 given = tk.Entry(root, justify="center", width=3)
                 given.insert(-1, temp_unsolved[row, column])
                 given.grid(row=row + 3, column=column + 8)
+        end_time = time.process_time()
+        print(end_time - start_time, "seconds to run 'solve'")
+
+    # resets input boxes
+    def Reset():
+        for row in range(9):
+            for column in range(9):
+                given = tk.Entry(root, justify="center", width=3)
+                given.insert(-1, 0)  # fills box with a zero at -1 index? It works, but so does changing the number
+                given.grid(row=row + 3, column=column + 8)  # spacial position of box
+                all_given.append(given)  # adds the entry box input to the end of the array "all_given"
 
         # create a loop for the second step hidden pairs
         # check for hidden pairs and delete values
@@ -391,14 +417,14 @@ if __name__ == "__main__":
 
         # still not solved, use brute force
 
-    # GUI initializing
+    # GUI design
     root = tk.Tk()
     root.title("Sudoku Solver")
-    root.geometry("420x270")
+    root.geometry("500x300")
     root.configure(bg="#964b00")
     tk.Label(root, text="Sudoku Solver", font="arial", fg="white", bg="#964b00").grid(row=1, column=4)
     tk.Label(root, text="Enter known values", fg="white", bg="#964b00").grid(row=2, column=4)
-    # populates entry boxes
+    # entry box creation
     for row in range(9):
         for column in range(9):
             given = tk.Entry(root, justify="center", width=3)
@@ -406,7 +432,8 @@ if __name__ == "__main__":
             given.grid(row=row+3, column=column+8)  # spacial position of box
             all_given.append(given) # adds the entry box input to the end of the array "all_given"
 
-    tk.Button(root, text='Solve', command=Solve).grid(row=12, column=0)
+    tk.Button(root, text='Solve', command=Solve).grid(row=12, column=17)
+    tk.Button(root, text='Reset', command=Reset).grid(row=13, column=17)
 
 
     root.mainloop()
