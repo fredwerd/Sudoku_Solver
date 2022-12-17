@@ -46,9 +46,9 @@ if __name__ == "__main__":
                                   [0, 7, 0, 8, 0, 5, 0, 2, 0],
                                   [3, 0, 0, 0, 4, 0, 0, 0, 9]])
 
-        # checks for input errors
-        for row_error in range(0, 9):
-            for column_error in range(0, 9):
+        # STEP 1: check for input errors
+        for row_error in range(9):
+            for column_error in range(9):
                 if temp_unsolved[row_error, column_error] == 0:
                     continue
                     # this long thing is counting how many there are of the current index of temp_unsolved in each
@@ -60,21 +60,22 @@ if __name__ == "__main__":
                     print("input error: conflict(s) with box at row", row_error, "column", column_error)
                     return
 
+        # STEP 2: create possible solution array pseudo_full
         # creates pseudo_full as an 81x9 array correlating possible solutions to solution boxes
         # sudoku box location is found by the equation: pseudo_full row = sudoku row * 9 + sudoku column /
         # with rows and columns for either array beginning at 0 compatible with loop indexes
         pseudo_ind = np.arange(1, 10)
         pseudo_full = np.array([pseudo_ind] * 81)
 
-        # user input is used to clear potential box solutions from pseudo_full
-        for row in range(0, 9):
-            for column in range(0, 9):
+        # STEP 3.1: empty values from pseudo_full according to input values
+        for row in range(9):
+            for column in range(9):
                 if temp_unsolved[row, column] > 0:
                     # column: start at the current column in unsolved (c) and run down equivalent row in pseudo (c1*9+c)
-                    for column_clear in range(0, 9):
+                    for column_clear in range(9):
                         pseudo_full[column_clear * 9 + column, temp_unsolved[row, column] - 1] = 0
                     # row: start at first column of current row (r) and run through the row in pseudo
-                    for row_clear in range(0, 9):
+                    for row_clear in range(9):
                         pseudo_full[row * 9 + row_clear, temp_unsolved[row, column] - 1] = 0
                     # box: check if row and column is the first second or third in smaller 3x3 box
                     # reset loop index to the first slot in the smaller box
@@ -97,46 +98,29 @@ if __name__ == "__main__":
                     # current value from given values was erased, so set it back in the pseudo values
                     pseudo_full[row * 9 + column, temp_unsolved[row, column] - 1] = temp_unsolved[row, column]
 
+        # STEP 3.2: save any solutions found into temp_unsolved
+        # counts the number of zeros in each row of pseudo_full
+        # 8 zeros means a solution was found, so it is saved in temp_unsolved
+        for row in range(9):
+            for column in range(9):
+                if pseudo_full[row * 9 + column].tolist().count(0) == 8:
+                    temp_unsolved[row, column] = sum(pseudo_full[row * 9 + column])
 
-            # test that original is restored, needs checked again after error checking is fixed
-            for r in range(0, 9):
-                for c in range(0, 9):
-                    if temp_unsolved[r, c] > 0:
-                        if pseudo_full[r * 9 + c, temp_unsolved[r, c] - 1] == temp_unsolved[r, c]:
-                            pass
-                        else:
-                            print('Potential illegal initial value at row', r, 'column', c)
-                            break
-
-            # set any for sure number into temp_unsolved
-            v = 0
-            for ROW in range(0, 9):
-                for COLUMN in range(0, 9):
-                    if temp_unsolved[ROW, COLUMN] == 0:
-                        for PSEUDO_INDEX in range(0, 9):
-                            if pseudo_full[ROW * 9 + COLUMN, PSEUDO_INDEX] == 0:
-                                v += 1
-                            if v == 8:
-                                temp_unsolved[ROW, COLUMN] = sum(pseudo_full[ROW * 9 + COLUMN])
-                                v = 0
-                        v = 0
-        # to do: end of first while loop
-        print(temp_unsolved)
-
-        # solves any square that is the only possible location for a solution number
+        # STEP 4: search arrays for boxes that can be solved due to being the only remaining box a solution can fill
         temp_p = np.zeros([9, 9])
         temp_box = np.zeros([1, 9])
+        # this might be unnecessary or need moved
         box = 0
         # by number, enter every possible unsolved spot for that p
         for p in range(1, 10):
-            for r in range(0, 9):
-                for c in range(0, 9):
+            for r in range(9):
+                for c in range(9):
                     if (temp_unsolved[r, c] == 0 and p in pseudo_full[r * 9 + c]) or temp_unsolved[r, c] == p:
                         # check if space can be current p
                         # if it can, store the potential value in a temp p, which should contain all possible p spots
                         temp_p[r, c] = p
-            for r1 in range(0, 9):
-                for c1 in range(0, 9):
+            for r1 in range(9):
+                for c1 in range(9):
                     if temp_unsolved[r1, c1] == 0:
                         # box finder
                         if c1 % 3 == 0:
@@ -208,7 +192,7 @@ if __name__ == "__main__":
                 while c < 10:
                     #if r * 9 + c == 16:
                         #break
-                    print('current index', r * 9 + c)
+                    #print('current index', r * 9 + c)
                     if c == 9:
                         c = 0
                         r += 1
