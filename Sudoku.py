@@ -60,8 +60,8 @@ if __name__ == "__main__":
                     print("input error: conflict(s) with box at row", row_error, "column", column_error)
                     return
 
-        # STEP 2: create possible solution array pseudo_full
-        # creates pseudo_full as an 81x9 array correlating possible solutions to solution boxes
+        # STEP 2: create p solution array pseudo_full
+        # creates pseudo_full as an 81x9 array correlating p solutions to solution boxes
         # sudoku box location is found by the equation: pseudo_full row = sudoku row * 9 + sudoku column /
         # with rows and columns for either array beginning at 0 compatible with loop indexes
         pseudo_ind = np.arange(1, 10)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         for row in range(9):
             for column in range(9):
                 if temp_unsolved[row, column] > 0:
-                    # column: start at the current column in unsolved (c) and run down equivalent row in pseudo (c1*9+c)
+                    # column: start at the current column in unsolved (c) and run down equivalent row in pseudo (c2*9+c)
                     for column_clear in range(9):
                         pseudo_full[column_clear * 9 + column, temp_unsolved[row, column] - 1] = 0
                     # row: start at first column of current row (r) and run through the row in pseudo
@@ -106,68 +106,62 @@ if __name__ == "__main__":
                 if pseudo_full[row * 9 + column].tolist().count(0) == 8:
                     temp_unsolved[row, column] = sum(pseudo_full[row * 9 + column])
 
-        # STEP 4: search arrays for boxes that can be solved due to being the only remaining box a solution can fill
-        temp_p = np.zeros([9, 9])
+        # STEP 4: Only choice: search arrays for boxes that can be solved due to all other options ruled out
+        temp_p = np.zeros([9, 9])  # dtype int potentially
         temp_box = np.zeros([1, 9])
-        # this might be unnecessary or need moved
-        box = 0
-        # by number, enter every possible unsolved spot for that p
+        # check temp_unsolved for all the potential boxes 'p' fits in
         for p in range(1, 10):
-            for r in range(9):
-                for c in range(9):
-                    if (temp_unsolved[r, c] == 0 and p in pseudo_full[r * 9 + c]) or temp_unsolved[r, c] == p:
-                        # check if space can be current p
-                        # if it can, store the potential value in a temp p, which should contain all possible p spots
-                        temp_p[r, c] = p
-            for r1 in range(9):
-                for c1 in range(9):
-                    if temp_unsolved[r1, c1] == 0:
+            for row in range(9):
+                for column in range(9):
+                    if (temp_unsolved[row, column] == 0 and p in pseudo_full[row * 9 + column]) \
+                            or temp_unsolved[row, column] == p:
+                        # store the potential value in a temp p, which contains all potential p spots
+                        temp_p[row, column] = p
+            # run through temp_unsolved again, checking for solutions that are the only choice
+            for r2 in range(9):
+                for c2 in range(9):
+                    if temp_unsolved[r2, c2] == 0:
                         # box finder
-                        if c1 % 3 == 0:
-                            c3 = c1
-                        elif (c1 - 1) % 3 == 0:
-                            c3 = c1 - 1
+                        if c2 % 3 == 0:
+                            c3 = c2
+                        elif (c2 - 1) % 3 == 0:
+                            c3 = c2 - 1
                         else:
-                            c3 = c1 - 2
-                        if r1 % 3 == 0:
-                            r3 = r1
-                        elif (r1 - 1) % 3 == 0:
-                            r3 = r1 - 1
+                            c3 = c2 - 2
+                        if r2 % 3 == 0:
+                            r3 = r2
+                        elif (r2 - 1) % 3 == 0:
+                            r3 = r2 - 1
                         else:
-                            r3 = r1 - 2
+                            r3 = r2 - 2
                         box = 0
+                        # fills temp_box with the potential values from temp_p of current 3x3 box
                         for r4 in range(r3, r3 + 3):
                             for c4 in range(c3, c3 + 3):
                                 temp_box[0, box] = temp_p[r4, c4]
                                 box += 1
-                        # check row
-                        if sum(temp_p[r1]) == p and p in pseudo_full[r1 * 9 + c1]:
-                            temp_unsolved[r1, c1] = p
-                            print('y', p)
-                        # check column
-                        elif sum(temp_p[:, c1]) == p and p in pseudo_full[r1 * 9 + c1]:
-                            temp_unsolved[r1, c1] = p
-                            print('y again', p)
-                        # check box
-                        elif sum(temp_box[0]) == p and p in pseudo_full[r1 * 9 + c1]:
-                            temp_unsolved[r1, c1] = p
-                            print('yet again,', p)
+                        # if current row has one possible location for the potential value p, save as a solution
+                        if sum(temp_p[r2]) == p and p in pseudo_full[r2 * 9 + c2]:
+                            temp_unsolved[r2, c2] = p
+                        # if current column has one possible location for the potential value p, save as a solution
+                        elif sum(temp_p[:, c2]) == p and p in pseudo_full[r2 * 9 + c2]:
+                            temp_unsolved[r2, c2] = p
+                        # if current box(temp_box) has one possible location for the potential value p, save as solution
+                        elif sum(temp_box[0]) == p and p in pseudo_full[r2 * 9 + c2]:
+                            temp_unsolved[r2, c2] = p
+                # reset the potential values array and check the puzzle for the next number
                 temp_p = np.zeros([9, 9])
-        print(temp_unsolved)
 
-
-        # error checking necessary for bulk solve
+        # STEP 5: brute force solve
+        # bug checking: the first row has no solutions, stop solving here. Shouldn't happen after input conflict check
         if sum(pseudo_full[0]) == 0:
             print('No solutions, please recheck input')
-            del temp_unsolved
-            # put a break here if the entire script is a while loop
+            return
 
-
-        # beginning of brute solving
-
-        # temp array of possible values that will be edited and restored over iterations of bulk solving
+        # brute_pseudo is saved from current possible values
+        # will be edited and restored over iterations of bulk solving, copy.deepcopy prevents pseudo_full from changing
         brute_pseudo = copy.deepcopy(pseudo_full)
-        # row, column of previously edited index
+        # previous_index is an array of row and column values of previously edited index for backtracking
         previous_index = np.zeros([81, 3], dtype=int)
         saved_row = 0
         saved_column = 0
@@ -175,20 +169,18 @@ if __name__ == "__main__":
         only = 0
         r = 0
         c = 0
-        c1 = 0
-        r1 = 0
+        c2 = 0
+        r2 = 0
         br = 0
         bc = 0
         backtrack = False
         conflict = False
         while 0 in temp_unsolved:
-            print('not solved yet')
             #if r * 9 + c == 16:
                 #break
             while r < 9:
                 #if r * 9 + c == 16:
                     #break
-                print('does this repeat more than once?')
                 while c < 10:
                     #if r * 9 + c == 16:
                         #break
@@ -199,8 +191,7 @@ if __name__ == "__main__":
                     if r == 9:
                         c = 10
                         break
-                    # put an r * 9 + c value here in the loop.
-                    # adds previous changed index values. If current run is backtracking, this will override index values
+                    # adds previous changed index values only if brute force is trying values and not returning from a conflict
                     if r * 9 + c < 80 and not backtrack:
                         previous_index[r * 9 + c] = [saved_row, saved_column, saved_pseudo]
                     if temp_unsolved[r, c] == 0:
@@ -220,8 +211,8 @@ if __name__ == "__main__":
                                     break
                                 # prevents saving over previous index values if you are backtracking
                                 backtrack = True
-                                # reset current brute pseudos to possible values
-                                print('no possible value, clearing previous, restarting')
+                                # reset current brute pseudos to p values
+                                print('no p value, clearing previous, restarting')
                                 brute_pseudo[r * 9 + c] = pseudo_full[r * 9 + c]
                                 # use the current space's previous index value
                                 # delete the brute pseudo used at previous index value
@@ -246,21 +237,21 @@ if __name__ == "__main__":
                                 break
                             if brute_pseudo[r * 9 + c, only] != 0:
                                 # check validity
-                                c1 = 0
-                                r1 = 0
+                                c2 = 0
+                                r2 = 0
                                 br = 0
                                 bc = 0
                                 # check row
-                                while c1 <= c:
+                                while c2 <= c:
                                     # if conflict:
-                                    if temp_unsolved[r, c1] == brute_pseudo[r * 9 + c, only]:
+                                    if temp_unsolved[r, c2] == brute_pseudo[r * 9 + c, only]:
                                         # set current pseudo to 0 for now
                                         # this line below is clearing a value in pseudo full? in each conflict check
                                         brute_pseudo[r * 9 + c, only] = 0
-                                        # try the next possible value in pseudo
+                                        # try the next p value in pseudo
                                         only += 1
                                         # don't check the rows
-                                        r1 = 10
+                                        r2 = 10
                                         # don't check box
                                         br = 10
                                         bc = 10
@@ -268,13 +259,13 @@ if __name__ == "__main__":
                                         # stop checking for conflicts
                                         break
                                     else:
-                                        c1 += 1
+                                        c2 += 1
                                 # check column
-                                while r1 <= r:
-                                    if temp_unsolved[r1, c] == brute_pseudo[r * 9 + c, only]:
+                                while r2 <= r:
+                                    if temp_unsolved[r2, c] == brute_pseudo[r * 9 + c, only]:
                                         # set current pseudo to 0 for now
                                         brute_pseudo[r * 9 + c, only] = 0
-                                        # try the next possible value in pseudo
+                                        # try the next p value in pseudo
                                         only += 1
                                         # don't check box
                                         br = 10
@@ -283,7 +274,7 @@ if __name__ == "__main__":
                                         # stop checking for conflicts
                                         break
                                     else:
-                                        r1 += 1
+                                        r2 += 1
                                 # check box
                                 # box finder
                                 if c % 3 == 0:
@@ -313,7 +304,7 @@ if __name__ == "__main__":
                                             print(only)
                                             # set current pseudo to 0 for now
                                             brute_pseudo[r * 9 + c, only] = 0
-                                            # try the next possible value in pseudo
+                                            # try the next p value in pseudo
                                             only += 1
                                             conflict = True
                                             # stop checking for conflicts
