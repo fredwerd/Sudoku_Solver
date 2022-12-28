@@ -198,10 +198,11 @@ if __name__ == "__main__":
                         backtrack = False
                         only = 0
                         print('unsolved(0) box at', r * 9 + c)
+                        # this loop checks every solution at current box
                         while only < 10:
                             print('trying', only + 1)
+                            # only reaching 9 signals a box with no solutions and a previous error, initiates backtrack
                             if only == 9:
-                                print('yes')
                                 if r * 9 + c == 0:
                                     print('error')
                                     only = 99
@@ -218,23 +219,23 @@ if __name__ == "__main__":
                                 # delete the brute pseudo used at previous index value
                                 print('previous index to use', previous_index[r * 9 + c, 0], previous_index[r * 9 + c, 1], previous_index[r * 9 + c, 2])
                                 brute_pseudo[(9 * previous_index[r * 9 + c, 0]) + previous_index[r * 9 + c, 1], previous_index[r * 9 + c, 2]] = 0
-                                # BEFORE THIS LINE, PSEUDO FULL REMAINS, r = 3, c = 7,saved = 3, 7, 2
-                                # undo the last change so the while loop after starting at 0 finds that 0 first
+                                # undo the last change to temp_unsolved so the while loop finds that 0 instead of the current box
                                 temp_unsolved[previous_index[r * 9 + c, 0], previous_index[r * 9 + c, 1]] = 0
-                                # AFTER THIS LINE, PSEUDO FULL HAS CHANGED
                                 # reset current previous index back to 0
                                 previous_index[9 * r + c] = [0, 0, 0]
                                 # reset saved values to the last index values
                                 # they will get stored before r
                                 # this allows successive backtracks
-                                saved_row = previous_index[9*r+c-1, 0]
-                                saved_column = previous_index[9*r+c-1, 1]
-                                saved_pseudo = previous_index[9*r+c-1, 2]
+                                saved_row = previous_index[9 * r + c - 1, 0]
+                                saved_column = previous_index[9 * r + c - 1, 1]
+                                saved_pseudo = previous_index[9 * r + c - 1, 2]
                                 # restart the indexing at the beginning
                                 c = 0
                                 r = 0
                                 only = 0
+                                # only breaks inner loop that checks current box
                                 break
+                            # a possible solution is checked for validity with previously entered brute force values
                             if brute_pseudo[r * 9 + c, only] != 0:
                                 # check validity
                                 c2 = 0
@@ -246,7 +247,6 @@ if __name__ == "__main__":
                                     # if conflict:
                                     if temp_unsolved[r, c2] == brute_pseudo[r * 9 + c, only]:
                                         # set current pseudo to 0 for now
-                                        # this line below is clearing a value in pseudo full? in each conflict check
                                         brute_pseudo[r * 9 + c, only] = 0
                                         # try the next p value in pseudo
                                         only += 1
@@ -293,15 +293,12 @@ if __name__ == "__main__":
                                 # check the 3 values in the row, have to check all 3 regardless of current column
                                 # move to the next row
                                 # don't check the next row, because there will be nothing to check
-                                print(only)
                                 while br <= 2:
-                                    print('row', only)
                                     if conflict:
                                         break
                                     while bc <= 2:
-                                        print('column', only)
-                                        if temp_unsolved[r3+br, c3+bc] == brute_pseudo[r * 9 + c, only]:
-                                            print(only)
+                                        # if conflict
+                                        if temp_unsolved[r3 + br, c3 + bc] == brute_pseudo[r * 9 + c, only]:
                                             # set current pseudo to 0 for now
                                             brute_pseudo[r * 9 + c, only] = 0
                                             # try the next p value in pseudo
@@ -315,7 +312,7 @@ if __name__ == "__main__":
                                         bc = 0
                                         br += 1
                                 print('checking for conflicts')
-                                # after the checks, you can save this value into temp_unsolved and retain index values
+                                # after the checks, value is saved into temp_unsolved and index values are saved
                                 if not conflict:
                                     print('no conflict, placing', only + 1, 'in', r * 9 + c, '...')
                                     temp_unsolved[r, c] = brute_pseudo[r * 9 + c, only]
@@ -323,14 +320,13 @@ if __name__ == "__main__":
                                     saved_column = c
                                     saved_pseudo = only
                                     only = 0
-                                    # try next box in row
+                                    # move to the next box
                                     c += 1
                                     backtrack = False
                                     break  # stops while loop that checks current temp_unsolved box for pseudo values,
                                     # you've already input a potentially accurate value so stop trying more
                                 else:
                                     print('conflict, trying:', only + 1, '...')
-                                    print(only)
                                     conflict = False
                             else:
                                 # brute pseudo has ruled out current "only" as an option
@@ -339,8 +335,9 @@ if __name__ == "__main__":
                         # move on if temp unsolved has a solved value
                         c += 1
 
-        # add a while loop to the brute force that stops after a certain number of iterations. like an error check
-        # add while loops before brute force to apply new several times before trying brute force
+        # add an error check that breaks out of the larger loop after a certain number of iterations
+
+        # consider trying techniques before the brute solve several times instead of just once
 
         print(temp_unsolved)
         # stores answer in solution as a list
@@ -358,7 +355,7 @@ if __name__ == "__main__":
         end_time = time.process_time()
         print(end_time - start_time, "seconds to run 'solve'")
 
-    # resets input boxes
+    # resets input boxes, doesn't let you retry the solve button though, moving it below the solve button doesn't fix it
     def Reset():
         for row in range(9):
             for column in range(9):
@@ -366,6 +363,7 @@ if __name__ == "__main__":
                 given.insert(-1, 0)  # fills box with a zero at -1 index? It works, but so does changing the number
                 given.grid(row=row + 3, column=column + 8)  # spacial position of box
                 all_given.append(given)  # adds the entry box input to the end of the array "all_given"
+
 
         # create a loop for the second step hidden pairs
         # check for hidden pairs and delete values
@@ -403,9 +401,12 @@ if __name__ == "__main__":
     for row in range(9):
         for column in range(9):
             given = tk.Entry(root, justify="center", width=3)
-            given.insert(-1, 0)  # fills box with a zero at -1 index? It works, but so does changing the number
-            given.grid(row=row+3, column=column+8)  # spacial position of box
-            all_given.append(given) # adds the entry box input to the end of the array "all_given"
+            # fills box with a zero at -1 index? It works, but so does changing the number
+            given.insert(-1, 0)
+            # spacial position of box
+            given.grid(row=row+3, column=column+8)
+            # adds the entry box input to the end of the array "all_given"
+            all_given.append(given)
 
     tk.Button(root, text='Solve', command=Solve).grid(row=12, column=17)
     tk.Button(root, text='Reset', command=Reset).grid(row=13, column=17)
